@@ -1,5 +1,6 @@
 /* eslint-disable @next/next/no-img-element */
 "use client"
+import { FaGithub, FaGoogle } from "react-icons/fa";
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { OctagonAlertIcon } from 'lucide-react';
@@ -55,6 +56,24 @@ export const SignInView = () => {
       onSuccess: () => {
         setPending(false);
         router.push('/');
+      },
+      onError: ({error}) => {
+        setPending(false);
+        setError(error.message);
+      },
+    });
+  };
+   const onSocial = async (provider: 'google' | 'github') => {
+    setError(null);
+    setPending(true);
+
+    authClient.signIn.social(
+      {
+      provider: provider,
+      callbackURL: "/",
+    },{
+      onSuccess: () => {
+        setPending(false);
       },
       onError: ({error}) => {
         setPending(false);
@@ -125,11 +144,21 @@ export const SignInView = () => {
                   </span>
                 </div>
                 <div className='grid grid-cols-2 gap-4'>
-                  <Button variant='outline' className='w-full' disabled={pending}>
-                    Google
+                  <Button variant='outline' className='w-full' disabled={pending}
+                  onClick={
+                    ()=>onSocial('google')
+                   }>
+                    <FaGoogle />
                   </Button>
-                  <Button variant='outline' className='w-full' disabled={pending}>
-                    GitHub
+                  <Button
+                   variant='outline' 
+                   className='w-full' 
+                   disabled={pending}
+                   onClick={
+                    ()=>onSocial('github')
+                   }
+                   >
+                    <FaGithub />
                   </Button>
                 </div>
                 <div className='text-center text-sm'>
