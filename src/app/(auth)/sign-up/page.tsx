@@ -1,8 +1,8 @@
-import { SignUnView } from "@/app/modules/auth/ui/views/sign-up-view";
+import { SignUpView } from "@/app/modules/auth/ui/views/sign-up-view";
 
 const Page=()=>{
     return(
-        <SignUnView />
+        <SignUpView />
     )
 }
 export default Page;
