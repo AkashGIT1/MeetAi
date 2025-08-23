@@ -6,38 +6,83 @@ import {
   protectedProcedure,
 } from "@/trpc/init";
 import { agentsInsertSchema } from "../schema";
-import { eq } from "drizzle-orm";
+import { eq, getTableColumns, sql } from "drizzle-orm";
+import { TRPCError } from "@trpc/server";
 
 export const agentsRouter = createTRPCRouter({
-  //Future Todo : Change 'getMany' to use protectedProcedure
   getOne: protectedProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ input }) => {
-      const [existingAgent] = await db
-        .select()
-        .from(agents)
-        .where(eq(agents.id, input.id));
+      try {
+        const [existingAgent] = await db
+          .select({
+            ...getTableColumns(agents),
+            //Todo : change to actua Count
+            meetingCount: sql<number>`5`
+          })
+          .from(agents)
+          .where(eq(agents.id, input.id));
 
-      return existingAgent;
+        if (!existingAgent) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Agent not found'
+          });
+        }
+
+        return existingAgent;
+      } catch (error) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to fetch agent',
+          cause: error
+        });
+      }
     }),
 
-  // Todo: Change 'getMany' to use protectedProcedure
-  getMany: protectedProcedure.query(async () => {
-    const data = await db.select().from(agents);
+  getMany: protectedProcedure
+    .query(async () => {
+      try {
+        const data = await db
+          .select()
+          .from(agents);
 
-    return data;
-  }),
+        return data;
+      } catch (error) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to fetch agents',
+          cause: error
+        });
+      }
+    }),
+
   create: protectedProcedure
     .input(agentsInsertSchema)
     .mutation(async ({ input, ctx }) => {
-      const [createdAgent] = await db
-        .insert(agents)
-        .values({
-          ...input,
-          userId: ctx.auth.user.id,
-        })
-        .returning();
+      try {
+        const [createdAgent] = await db
+          .insert(agents)
+          .values({
+            ...input,
+            userId: ctx.auth.user.id,
+          })
+          .returning();
 
-      return createdAgent;
+        if (!createdAgent) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Failed to create agent'
+          });
+        }
+
+        return createdAgent;
+      } catch (error) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to create agent',
+          cause: error
+        });
+      }
     }),
 });
