@@ -36,7 +36,7 @@ export const AgentForm = ({
                 await queryClient.invalidateQueries(
                     trpc.agents
                     .getMany
-                    .queryOptions(),
+                    .queryOptions({}),
                 );
                 if(initialValues?.id){
                   await  queryClient.invalidateQueries(
