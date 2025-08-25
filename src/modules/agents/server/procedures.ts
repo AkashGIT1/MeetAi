@@ -5,12 +5,72 @@ import {
   createTRPCRouter,
   protectedProcedure,
 } from "@/trpc/init";
-import { agentsInsertSchema } from "../schema";
+import { agentsInsertSchema, agentsUpdateSchema } from "../schema";
 import { and, count, desc, eq, getTableColumns, ilike, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { DEFAULT_PAGE, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, MIN_PAGE_SIZE } from "@/constants";
 
 export const agentsRouter = createTRPCRouter({
+
+  update: protectedProcedure
+    .input(agentsUpdateSchema)
+    .mutation(async ({ input, ctx }) => {
+      try {
+        const [updatedAgent] = await db
+          .update(agents)
+          .set(input)
+          .where(and(
+            eq(agents.id, input.id),
+            eq(agents.userId, ctx.auth.user.id),
+          ))
+          .returning();
+
+        if (!updatedAgent) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Agent not found'
+          });
+        }
+
+        return updatedAgent;
+      } catch (error) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to update agent',
+          cause: error
+        });
+      }
+    }),
+
+  remove: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      try {
+        const [removedAgent] = await db
+          .delete(agents)
+          .where(and(
+            eq(agents.id, input.id),
+            eq(agents.userId, ctx.auth.user.id),
+          ))
+          .returning(); 
+
+        if (!removedAgent) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Agent not found'
+          });
+        }
+
+        return removedAgent;
+      } catch (error) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to delete agent',
+          cause: error
+        });
+      }
+    }),
+
   getOne: protectedProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ input, ctx }) => {
